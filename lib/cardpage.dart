@@ -1,6 +1,8 @@
 import 'package:bayesiantech_assignment_part2/repository/repo.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'bloc/cardbloc.dart';
 import 'classes/comment.dart';
 
 class AddCardPage extends StatefulWidget {
@@ -11,10 +13,17 @@ class AddCardPage extends StatefulWidget {
 }
 
 class _AddCardPageState extends State<AddCardPage> {
-  final repo = Repository();
+  
+  @override
+  void initState() {
+    BlocProvider.of<CardBloc>(context).add(Getcomments());
+    super.initState();
+  }
+  
 
   @override
   Widget build(BuildContext context) {
+    Repository repo = Repository();
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       body: SafeArea(
@@ -91,25 +100,31 @@ class _AddCardPageState extends State<AddCardPage> {
       
                 SizedBox(
                   height: size.height*0.7,
-                  child: FutureBuilder<List>(
-                    future: repo.fetchcomments(),
-                    initialData: const [],
-                    builder: (context, snapshot){
-                      if (ConnectionState.done == snapshot.connectionState ) {
-                        if (snapshot.data != null) {
-                          return ListView(
-                            children: snapshot.data!.map((e) => Commentwidget(size: size, comment: e, updateserver: repo.updatecomments(e),)).toList().take(3).toList(),
-                          );
-                        } else {
-                          return const Center(child: Text('returned nothing'),);
-                        }
-                      } else if (ConnectionState.waiting == snapshot.connectionState){
-                        return const Center(child: CircularProgressIndicator(),);
-                      } else {
-                        return const Center(child: Text('returned nothing'),);
-                      }
-                    }
-                  )
+                  child: BlocBuilder<CardBloc, List<MyComment>>(
+                    builder: (context, state){
+                      return ListView(
+                        children: state.map((e) => Commentwidget(size: size, comment: e, updateserver: repo.updatecomments(e),)).toList(),
+                      );
+                    })
+                  // child: FutureBuilder<List>(
+                  //   future: repo.fetchcomments(),
+                  //   initialData: const [],
+                  //   builder: (context, snapshot){
+                  //     if (ConnectionState.done == snapshot.connectionState ) {
+                  //       if (snapshot.data != null) {
+                  //         return ListView(
+                  //           children: snapshot.data!.map((e) => Commentwidget(size: size, comment: e, updateserver: repo.updatecomments(e),)).toList().take(3).toList(),
+                  //         );
+                  //       } else {
+                  //         return const Center(child: Text('returned nothing'),);
+                  //       }
+                  //     } else if (ConnectionState.waiting == snapshot.connectionState){
+                  //       return const Center(child: CircularProgressIndicator(),);
+                  //     } else {
+                  //       return const Center(child: Text('returned nothing'),);
+                  //     }
+                  //   }
+                  // )
                 )
               ],
             ),
@@ -173,49 +188,57 @@ class Commentwidget extends StatelessWidget {
                 child: comment.isposted? Icon(Icons.check, color: Colors.grey.shade600,) :
                 IconButton(
                   onPressed: () async{
-                    await updateserver.then((value) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          shape: BeveledRectangleBorder(
-                            borderRadius: BorderRadius.circular(5)
-                          ),
-                          backgroundColor: Colors.grey.shade300,
-                          content: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'New comment was added', 
-                                  style: TextStyle(color: Colors.grey.shade800),),
-                                Icon(Icons.check_circle_outline_outlined, color: Colors.grey.shade900,)
-                              ],
-                            ),
-                          )
-                          )
-                      );
-                    }).catchError((error){
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          shape: BeveledRectangleBorder(
-                            borderRadius: BorderRadius.circular(5)
-                          ),
-                          backgroundColor: Colors.red,
-                          content: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 5.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'something went wrong', 
-                                  style: TextStyle(color: Colors.grey),),
-                                Icon(Icons.cancel_outlined, color: Colors.grey,)
-                              ],
-                            ),
-                          )
-                          )
-                      );
-                    });
+                    showDialog(
+                      context: context, 
+                      builder: (context){
+                        return MyDialogWidget(comment: comment, updateserver: updateserver);
+                        
+                      }
+                    );
+                    // await updateserver.then((value) {
+                    //   ScaffoldMessenger.of(context).showSnackBar(
+                    //     SnackBar(
+                    //       shape: BeveledRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(5)
+                    //       ),
+                    //       backgroundColor: Colors.grey.shade300,
+                    //       content: Padding(
+                    //         padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                    //         child: Row(
+                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //           children: [
+                    //             Text(
+                    //               'New comment was added', 
+                    //               style: TextStyle(color: Colors.grey.shade800),),
+                    //             Icon(Icons.check_circle_outline_outlined, color: Colors.grey.shade900,)
+                    //           ],
+                    //         ),
+                    //       )
+                    //       )
+                    //   );
+                    // }).catchError((error){
+                    //   ScaffoldMessenger.of(context).showSnackBar(
+                    //     SnackBar(
+                    //       shape: BeveledRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(5)
+                    //       ),
+                    //       backgroundColor: Colors.red,
+                    //       content: const Padding(
+                    //         padding: EdgeInsets.symmetric(horizontal: 5.0),
+                    //         child: Row(
+                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //           children: [
+                    //             Text(
+                    //               'something went wrong', 
+                    //               style: TextStyle(color: Colors.grey),),
+                    //             Icon(Icons.cancel_outlined, color: Colors.grey,)
+                    //           ],
+                    //         ),
+                    //       )
+                    //       )
+                    //   );
+                    // }
+                    // );
                   },
                   icon: Icon(Icons.add, color: Colors.grey.shade600,)))
             ],
@@ -226,94 +249,147 @@ class Commentwidget extends StatelessWidget {
   }
 }
 
-// class MyDialogWidget extends StatefulWidget {
-//   const MyDialogWidget({super.key, required this.comment});
-//   final MyComment comment;
+class MyDialogWidget extends StatefulWidget {
+  const MyDialogWidget({super.key, required this.comment, required this.updateserver});
+  final MyComment comment;
+  final Future updateserver;
 
-//   @override
-//   State<MyDialogWidget> createState() => _MyDialogWidgetState();
-// }
+  @override
+  State<MyDialogWidget> createState() => _MyDialogWidgetState();
+}
 
-// class _MyDialogWidgetState extends State<MyDialogWidget> {
-//   final TextEditingController _controller = TextEditingController();
-//   final dialogformkey = GlobalKey<FormState>();
+class _MyDialogWidgetState extends State<MyDialogWidget> {
+  final TextEditingController _controller = TextEditingController();
+  final dialogformkey = GlobalKey<FormState>();
 
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return AlertDialog(
-//       title: const Text('Type below'),
-//       content: Form(
-//         key: dialogformkey,
-//         child: Material(
-//           elevation: 2,
-//           borderRadius: BorderRadius.circular(10),
-//           child: TextFormField(
-//             validator: (value) {
-//               if (value == null) {
-//                 return 'input text';
-//               }
-//             },
-//             controller: _controller,
-//             decoration: InputDecoration(
-//               labelText: 'Comment',
-//               filled: true,
-//               fillColor: Colors.grey.shade100,
-//               enabledBorder: const OutlineInputBorder(
-//                 borderSide: BorderSide(
-//                   color: Colors.transparent
-//                 )
-//               ),
-//               border: const OutlineInputBorder(
-//                 borderRadius: BorderRadius.all(Radius.circular(10)),
-//                 borderSide: BorderSide(
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Type below'),
+      content: Form(
+        key: dialogformkey,
+        child: Material(
+          elevation: 2,
+          borderRadius: BorderRadius.circular(10),
+          child: TextFormField(
+            validator: (value) {
+              if (value == null) {
+                return 'input text';
+              }
+            },
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: 'Comment',
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: Colors.transparent
+                )
+              ),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+                borderSide: BorderSide(
                 
-//                 )
-//               )
-//             ),
-//           ),
-//         ),
-//       ),
+                )
+              )
+            ),
+          ),
+        ),
+      ),
 
-//       actions: [
-//         ElevatedButton(
-//           style: ElevatedButton.styleFrom(
-//             shape: RoundedRectangleBorder(
-//               borderRadius: BorderRadius.circular(12)
-//             ),
-//             backgroundColor: Colors.deepPurple
-//           ),
-//           onPressed: (){
-//             if (dialogformkey.currentState!.validate()) {
-//               Navigator.pop(context);
-//               FocusManager.instance.primaryFocus?.unfocus();
+      actions: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)
+            ),
+            backgroundColor: Colors.deepPurple
+          ),
+          onPressed: () async{
+            if (dialogformkey.currentState!.validate()) {
+              Navigator.pop(context);
+              FocusManager.instance.primaryFocus?.unfocus();
+
+               await widget.updateserver.then((value) {
+                  BlocProvider.of<CardBloc>(context).add(
+                  AddCardEvent(callingcomment: widget.comment, addedcomment: MyComment(
+                    thumbnailUrl: "https://via.placeholder.com/150/92c952",
+                    title: _controller.text, 
+                    id: int.parse(generateid()), url: ''))
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      shape: BeveledRectangleBorder(
+                        borderRadius: BorderRadius.circular(5)
+                      ),
+                      backgroundColor: Colors.grey.shade300,
+                      content: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'New comment was added', 
+                              style: TextStyle(color: Colors.grey.shade800),),
+                            Icon(Icons.check_circle_outline_outlined, color: Colors.grey.shade900,)
+                          ],
+                        ),
+                      )
+                      )
+                  );
+                }).catchError((error){
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      shape: BeveledRectangleBorder(
+                        borderRadius: BorderRadius.circular(5)
+                      ),
+                      backgroundColor: Colors.red,
+                      content: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 5.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'something went wrong', 
+                              style: TextStyle(color: Colors.grey),),
+                            Icon(Icons.cancel_outlined, color: Colors.grey,)
+                          ],
+                        ),
+                      )
+                      )
+                  );
+                }
+                );
               
-//               ScaffoldMessenger.of(context).showSnackBar(
-//                 SnackBar(
-//                   shape: BeveledRectangleBorder(
-//                     borderRadius: BorderRadius.circular(5)
-//                   ),
-//                   backgroundColor: Colors.grey.shade300,
-//                   content: Padding(
-//                     padding: const EdgeInsets.symmetric(horizontal: 5.0),
-//                     child: Row(
-//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                       children: [
-//                         Text(
-//                           'New comment was added', 
-//                           style: TextStyle(color: Colors.grey.shade800),),
-//                         Icon(Icons.check_circle_outline_outlined, color: Colors.grey.shade900,)
-//                       ],
-//                     ),
-//                   )
-//                   )
-//               );
-//             }
-//           }, 
-//           child: const Text('Add')
-//           ),
+              
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(
+              //     shape: BeveledRectangleBorder(
+              //       borderRadius: BorderRadius.circular(5)
+              //     ),
+              //     backgroundColor: Colors.grey.shade300,
+              //     content: Padding(
+              //       padding: const EdgeInsets.symmetric(horizontal: 5.0),
+              //       child: Row(
+              //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //         children: [
+              //           Text(
+              //             'New comment was added', 
+              //             style: TextStyle(color: Colors.grey.shade800),),
+              //           Icon(Icons.check_circle_outline_outlined, color: Colors.grey.shade900,)
+              //         ],
+              //       ),
+              //     )
+              //     )
+              // );
+            }
+          }, 
+          child: const Text('Add')
+          ),
         
-//       ],
-//     );
-//   }
-// }
+      ],
+    );
+  }
+}
